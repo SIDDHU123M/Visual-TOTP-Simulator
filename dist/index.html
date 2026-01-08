@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual TOTP Simulator</title>
+  <script type="module" crossorigin src="/Visual-TOTP-Simulator/assets/index-7cnWpmX3.js"></script>
+  <link rel="stylesheet" crossorigin href="/Visual-TOTP-Simulator/assets/index-Ce3xeeCi.css">
+</head>
+<body>
+  <header class="header">
+    <h1>🔐 Visual TOTP Simulator</h1>
+    <p class="subtitle">Understanding Time-based One-Time Passwords</p>
+    <div class="warning-banner">
+      ⚠️ This is an educational demo, not for secure storage or production use.
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Panel 1: Time -->
+    <section class="panel time-panel" id="time-panel">
+      <div class="panel-header">
+        <h2>⏱️ Time Panel</h2>
+        <span class="tooltip" data-tip="TOTP uses the current time divided by a time step to create a counter value">ℹ️</span>
+      </div>
+      <div class="panel-content">
+        <div class="time-display">
+          <div class="countdown-ring">
+            <svg viewBox="0 0 100 100">
+              <circle class="ring-bg" cx="50" cy="50" r="45"/>
+              <circle class="ring-progress" cx="50" cy="50" r="45" id="countdown-ring"/>
+            </svg>
+            <div class="time-remaining" id="time-remaining">30</div>
+          </div>
+        </div>
+        
+        <div class="time-info">
+          <div class="info-row">
+            <label>Unix Timestamp:</label>
+            <span class="value mono" id="unix-timestamp">0</span>
+          </div>
+          <div class="info-row">
+            <label>Time Step:</label>
+            <span class="value mono" id="time-step-display">30s</span>
+          </div>
+          <div class="info-row highlight">
+            <label>Counter:</label>
+            <span class="value mono large" id="counter-value">0</span>
+          </div>
+          <div class="formula">
+            counter = floor(<span id="formula-time">0</span> / <span id="formula-step">30</span>) = <span id="formula-result">0</span>
+          </div>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <label>Time Step:</label>
+            <select id="time-step-select">
+              <option value="30">30 seconds</option>
+              <option value="60">60 seconds</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Time Offset:</label>
+            <input type="range" id="time-offset" min="-300" max="300" value="0">
+            <span id="time-offset-value">0s</span>
+          </div>
+          <div class="control-group">
+            <button id="freeze-toggle" class="btn">❄️ Freeze Time</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-arrow">→</div>
+    </section>
+
+    <!-- Panel 2: Secret -->
+    <section class="panel secret-panel" id="secret-panel">
+      <div class="panel-header">
+        <h2>🔑 Secret Panel</h2>
+        <span class="tooltip" data-tip="The shared secret is known to both client and server. It never changes and is never transmitted.">ℹ️</span>
+      </div>
+      <div class="panel-content">
+        <div class="secret-display">
+          <div class="secret-label">Shared Secret (Base32):</div>
+          <div class="secret-value mono" id="secret-base32">JBSWY3DPEHPK3PXP</div>
+        </div>
+        
+        <div class="secret-bytes">
+          <div class="secret-label">Raw Bytes (Hex):</div>
+          <div class="bytes-grid" id="secret-hex-grid"></div>
+        </div>
+        
+        <div class="shared-indicator">
+          <div class="device client">
+            <span class="icon">📱</span>
+            <span>Client</span>
+          </div>
+          <div class="shared-line">
+            <span class="lock">🔒</span>
+            <span>Same Secret</span>
+          </div>
+          <div class="device server">
+            <span class="icon">🖥️</span>
+            <span>Server</span>
+          </div>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <button id="generate-secret" class="btn">🎲 Generate Random</button>
+          </div>
+          <div class="control-group">
+            <label>Manual Input:</label>
+            <input type="text" id="secret-input" placeholder="Enter Base32 secret" value="JBSWY3DPEHPK3PXP">
+          </div>
+          <div class="control-group">
+            <label>View Mode:</label>
+            <select id="secret-view-mode">
+              <option value="base32">Base32</option>
+              <option value="hex">Hexadecimal</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="panel-arrow">→</div>
+    </section>
+
+    <!-- Panel 3: HMAC -->
+    <section class="panel hmac-panel" id="hmac-panel">
+      <div class="panel-header">
+        <h2>🔐 HMAC Panel</h2>
+        <span class="tooltip" data-tip="HMAC combines the secret key and counter to produce a hash. This is the cryptographic core of TOTP.">ℹ️</span>
+      </div>
+      <div class="panel-content">
+        <div class="hmac-inputs">
+          <div class="input-box">
+            <div class="input-label">Secret Key</div>
+            <div class="input-value mono" id="hmac-key-preview">...</div>
+          </div>
+          <div class="plus-sign">+</div>
+          <div class="input-box">
+            <div class="input-label">Counter (8 bytes)</div>
+            <div class="input-value mono" id="hmac-counter-preview">00 00 00 00 00 00 00 00</div>
+          </div>
+        </div>
+        
+        <div class="hmac-process">
+          <div class="process-arrow">↓</div>
+          <div class="hmac-box" id="hmac-animation-box">
+            <span class="hmac-label">HMAC-<span id="hmac-algo-display">SHA1</span></span>
+          </div>
+          <div class="process-arrow">↓</div>
+        </div>
+        
+        <div class="hmac-output">
+          <div class="output-label">Hash Output (<span id="hash-length">20</span> bytes):</div>
+          <div class="hash-bytes" id="hmac-hash-grid"></div>
+        </div>
+        
+        <div class="formula">
+          HMAC = HMAC-<span id="formula-algo">SHA1</span>(secret, counter)
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <label>Hash Algorithm:</label>
+            <select id="hash-algorithm">
+              <option value="SHA-1">SHA-1 (20 bytes)</option>
+              <option value="SHA-256">SHA-256 (32 bytes)</option>
+              <option value="SHA-512">SHA-512 (64 bytes)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="panel-arrow">→</div>
+    </section>
+
+    <!-- Panel 4: Truncation -->
+    <section class="panel truncation-panel" id="truncation-panel">
+      <div class="panel-header">
+        <h2>✂️ Truncation Panel</h2>
+        <span class="tooltip" data-tip="Dynamic truncation extracts a 4-byte section from the hash to create a manageable number. This is the key step!">ℹ️</span>
+      </div>
+      <div class="panel-content">
+        <div class="truncation-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-label">Get offset from last nibble:</div>
+            <div class="step-formula">
+              offset = <span class="mono" id="last-byte-value">0x00</span> & 0x0F = <span class="mono highlight" id="offset-value">0</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="truncation-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-label">Select 4 bytes at offset:</div>
+            <div class="selected-bytes" id="selected-bytes-display"></div>
+          </div>
+        </div>
+        
+        <div class="truncation-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-label">Convert to integer & mask sign bit:</div>
+            <div class="step-formula">
+              <div class="mono" id="binary-value-display">0x00000000</div>
+              <div class="mask-operation">& 0x7FFFFFFF</div>
+              <div class="mono highlight" id="masked-value-display">0</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="important-note">
+          <strong>⭐ This is the most important learning step!</strong>
+          <p>Truncation makes the full hash practical for human use.</p>
+        </div>
+      </div>
+      <div class="panel-arrow">→</div>
+    </section>
+
+    <!-- Panel 5: OTP Output -->
+    <section class="panel otp-panel" id="otp-panel">
+      <div class="panel-header">
+        <h2>🔢 OTP Output</h2>
+        <span class="tooltip" data-tip="The final OTP is the truncated value modulo 10^digits, giving us a 6 or 8 digit code.">ℹ️</span>
+      </div>
+      <div class="panel-content">
+        <div class="otp-display">
+          <div class="otp-previous" id="otp-previous"></div>
+          <div class="otp-current" id="otp-current">000000</div>
+          <div class="otp-next-indicator">Next code in <span id="otp-countdown">30</span>s</div>
+        </div>
+        
+        <div class="formula">
+          OTP = <span class="mono" id="formula-masked">0</span> % 10^<span id="formula-digits">6</span> = <span class="mono highlight" id="formula-otp">000000</span>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <label>Digits:</label>
+            <select id="otp-digits">
+              <option value="6">6 digits</option>
+              <option value="8">8 digits</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Verification Section -->
+  <section class="verification-section" id="verification-section">
+    <div class="panel-header">
+      <h2>✅ Server Verification Simulation</h2>
+      <span class="tooltip" data-tip="The server recomputes the OTP using the same secret and compares it. It also checks ±1 time windows to handle clock drift.">ℹ️</span>
+    </div>
+    <div class="verification-content">
+      <div class="verification-input">
+        <label>Enter OTP to verify:</label>
+        <input type="text" id="verify-otp-input" maxlength="8" placeholder="Enter OTP">
+        <button id="verify-btn" class="btn btn-primary">Verify</button>
+      </div>
+      
+      <div class="verification-process" id="verification-process">
+        <div class="verification-note">
+          <strong>Note:</strong> OTP is never sent or stored. Only verified by recomputation.
+        </div>
+        
+        <div class="counter-checks" id="counter-checks">
+          <!-- Will be populated by JavaScript -->
+        </div>
+        
+        <div class="verification-result" id="verification-result">
+          <!-- Will show success/failure -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Built for learning TOTP internals • <a href="https://datatracker.ietf.org/doc/html/rfc6238" target="_blank">RFC 6238</a></p>
+  </footer>
+
+</body>
+</html>

@@ -196,7 +196,6 @@ async function verifyOTP(inputOTP: string): Promise<void> {
   const currentCounter = state.timeManager.getCounter();
   const checkedCounters: { counter: number; otp: string; matched: boolean; current: boolean }[] = [];
   let matched = false;
-  let matchedIndex = -1;
 
   // Check counters: previous, current, next
   for (let i = -1; i <= 1; i++) {
@@ -221,7 +220,6 @@ async function verifyOTP(inputOTP: string): Promise<void> {
     
     if (isMatched) {
       matched = true;
-      matchedIndex = i + 1;
     }
 
     checkedCounters.push({

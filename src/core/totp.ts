@@ -37,7 +37,7 @@ export interface TOTPConfig {
 /**
  * Dynamic truncation as per RFC 4226
  */
-export function dynamicTruncation(hash: Uint8Array, digits: number): TruncationResult {
+export function dynamicTruncation(hash: Uint8Array, _digits: number): TruncationResult {
   // Get offset from last nibble (4 bits)
   const offset = hash[hash.length - 1] & 0x0f;
   

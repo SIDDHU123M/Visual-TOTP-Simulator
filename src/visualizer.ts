@@ -25,7 +25,7 @@ export class Visualizer {
     const formulaTime = document.getElementById('formula-time');
     const formulaStep = document.getElementById('formula-step');
     const formulaResult = document.getElementById('formula-result');
-    const countdownRing = document.getElementById('countdown-ring') as SVGCircleElement;
+    const countdownRing = document.querySelector('#countdown-ring') as SVGCircleElement | null;
     const freezeBtn = document.getElementById('freeze-toggle');
 
     if (unixTimestamp) unixTimestamp.textContent = currentTime.toString();

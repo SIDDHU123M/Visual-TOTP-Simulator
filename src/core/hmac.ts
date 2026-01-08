@@ -96,15 +96,19 @@ export async function hmac(
   message: Uint8Array,
   algorithm: HashAlgorithm = 'SHA-1'
 ): Promise<HMACResult> {
+  // Create new ArrayBuffer copies to avoid SharedArrayBuffer type issues
+  const keyBuffer = new Uint8Array(key).buffer;
+  const messageBuffer = new Uint8Array(message).buffer;
+  
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key,
+    keyBuffer,
     { name: 'HMAC', hash: algorithm },
     false,
     ['sign']
   );
   
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, message);
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
   const hash = new Uint8Array(signature);
   
   return {
